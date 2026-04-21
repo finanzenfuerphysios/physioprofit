@@ -46,13 +46,15 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <>
       <NavigationGuard />
-      <Stack.Screen name="index" />
-      <Stack.Screen name="auth/login" />
-      <Stack.Screen name="auth/register" />
-      <Stack.Screen name="onboarding/usertype" />
-      <Stack.Screen name="tabs/dashboard" />
-    </Stack>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="auth/login" />
+        <Stack.Screen name="auth/register" />
+        <Stack.Screen name="onboarding/usertype" />
+        <Stack.Screen name="tabs/dashboard" />
+      </Stack>
+    </>
   );
 }
