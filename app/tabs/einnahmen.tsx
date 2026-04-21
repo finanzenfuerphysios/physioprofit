@@ -138,10 +138,36 @@ export default function EinnahmenScreen() {
               <Text style={styles.modalSub}>{quelle}</Text>
 
               <View style={styles.toggleRow}>
-                <TouchableOpacity style={[styles.toggle, !isBrutto && styles.toggleActive]} onPress={() => setIsBrutto(false)}>
+                <TouchableOpacity
+                  style={[styles.toggle, !isBrutto && styles.toggleActive]}
+                  onPress={() => {
+                    if (isBrutto && betrag) {
+                      const raw = parseFloat(betrag.replace(',', '.'));
+                      const steuer = parseFloat(steuersatz) / 100;
+                      if (!isNaN(raw)) {
+                        const netto = raw * (1 - steuer);
+                        setBetrag((Math.round(netto * 100) / 100).toFixed(2).replace('.', ','));
+                      }
+                    }
+                    setIsBrutto(false);
+                  }}
+                >
                   <Text style={[styles.toggleText, !isBrutto && styles.toggleTextActive]}>Netto</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.toggle, isBrutto && styles.toggleActive]} onPress={() => setIsBrutto(true)}>
+                <TouchableOpacity
+                  style={[styles.toggle, isBrutto && styles.toggleActive]}
+                  onPress={() => {
+                    if (!isBrutto && betrag) {
+                      const raw = parseFloat(betrag.replace(',', '.'));
+                      const steuer = parseFloat(steuersatz) / 100;
+                      if (!isNaN(raw) && steuer < 1) {
+                        const brutto = raw / (1 - steuer);
+                        setBetrag((Math.round(brutto * 100) / 100).toFixed(2).replace('.', ','));
+                      }
+                    }
+                    setIsBrutto(true);
+                  }}
+                >
                   <Text style={[styles.toggleText, isBrutto && styles.toggleTextActive]}>Brutto</Text>
                 </TouchableOpacity>
               </View>

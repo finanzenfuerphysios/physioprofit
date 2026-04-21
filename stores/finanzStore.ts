@@ -52,11 +52,15 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
 
   addEinnahme: async (userId, data) => {
     try {
-      const { data: row, error } = await supabase
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung — prüfe deine Internetverbindung')), 15000)
+      );
+      const request = supabase
         .from('einnahmen')
         .insert({ user_id: userId, ...data })
         .select()
         .single();
+      const { data: row, error } = (await Promise.race([request, timeout])) as any;
       if (error) return { error: error.message };
       if (row) set((s) => ({ einnahmen: [...s.einnahmen, row] }));
       return {};
@@ -67,11 +71,15 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
 
   addAusgabe: async (userId, data) => {
     try {
-      const { data: row, error } = await supabase
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung — prüfe deine Internetverbindung')), 15000)
+      );
+      const request = supabase
         .from('ausgaben')
         .insert({ user_id: userId, ...data })
         .select()
         .single();
+      const { data: row, error } = (await Promise.race([request, timeout])) as any;
       if (error) return { error: error.message };
       if (row) set((s) => ({ ausgaben: [...s.ausgaben, row] }));
       return {};
