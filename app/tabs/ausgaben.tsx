@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { useFinanzStore } from '../../stores/finanzStore';
@@ -124,47 +124,44 @@ export default function AusgabenScreen() {
 
       <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.modalOverlay}
         >
-          <TouchableWithoutFeedback onPress={() => setModal(false)}>
-            <View style={styles.modalBackdrop} />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <ScrollView
-              style={styles.modalScroll}
-              contentContainerStyle={styles.modalBox}
-              keyboardShouldPersistTaps="handled"
-            >
-              <Text style={styles.modalTitle}>{unterkategorie}</Text>
-              <Text style={[styles.modalSub, { color: aktKategorie?.farbe }]}>{aktKategorie?.icon} {aktKategorie?.label}</Text>
+          <TouchableOpacity activeOpacity={1} style={styles.modalBackdrop} onPress={() => { Keyboard.dismiss(); setModal(false); }} />
+          <ScrollView
+            style={styles.modalScroll}
+            contentContainerStyle={styles.modalBox}
+            keyboardShouldPersistTaps="always"
+          >
+            <Text style={styles.modalTitle}>{unterkategorie}</Text>
+            <Text style={[styles.modalSub, { color: aktKategorie?.farbe }]}>{aktKategorie?.icon} {aktKategorie?.label}</Text>
 
-              <TextInput
-                style={styles.input}
-                placeholder="Betrag in €"
-                placeholderTextColor="#64748B"
-                keyboardType="decimal-pad"
-                value={betrag}
-                onChangeText={setBetrag}
-                returnKeyType="done"
-              />
-              <TextInput
-                style={styles.input}
-                placeholder="Notiz (optional)"
-                placeholderTextColor="#64748B"
-                value={beschreibung}
-                onChangeText={setBeschreibung}
-                returnKeyType="done"
-              />
+            <TextInput
+              style={styles.input}
+              placeholder="Betrag in €"
+              placeholderTextColor="#64748B"
+              keyboardType="decimal-pad"
+              value={betrag}
+              onChangeText={setBetrag}
+              returnKeyType="done"
+              autoFocus
+            />
+            <TextInput
+              style={styles.input}
+              placeholder="Notiz (optional)"
+              placeholderTextColor="#64748B"
+              value={beschreibung}
+              onChangeText={setBeschreibung}
+              returnKeyType="done"
+            />
 
-              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: aktKategorie?.farbe }]} onPress={speichern} disabled={saving}>
-                <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : '✓ Speichern'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setModal(false)}>
-                <Text style={styles.cancelText}>Abbrechen</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </TouchableWithoutFeedback>
+            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: aktKategorie?.farbe }]} onPress={speichern} disabled={saving}>
+              <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : '✓ Speichern'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setModal(false)}>
+              <Text style={styles.cancelText}>Abbrechen</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
     </View>

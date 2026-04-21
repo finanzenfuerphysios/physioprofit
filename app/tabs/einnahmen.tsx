@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { useFinanzStore } from '../../stores/finanzStore';
@@ -122,92 +122,89 @@ export default function EinnahmenScreen() {
 
       <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.modalOverlay}
         >
-          <TouchableWithoutFeedback onPress={() => setModal(false)}>
-            <View style={styles.modalBackdrop} />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <ScrollView
-              style={styles.modalScroll}
-              contentContainerStyle={styles.modalBox}
-              keyboardShouldPersistTaps="handled"
-            >
-              <Text style={styles.modalTitle}>{quelleDetail}</Text>
-              <Text style={styles.modalSub}>{quelle}</Text>
+          <TouchableOpacity activeOpacity={1} style={styles.modalBackdrop} onPress={() => { Keyboard.dismiss(); setModal(false); }} />
+          <ScrollView
+            style={styles.modalScroll}
+            contentContainerStyle={styles.modalBox}
+            keyboardShouldPersistTaps="always"
+          >
+            <Text style={styles.modalTitle}>{quelleDetail}</Text>
+            <Text style={styles.modalSub}>{quelle}</Text>
 
-              <View style={styles.toggleRow}>
-                <TouchableOpacity
-                  style={[styles.toggle, !isBrutto && styles.toggleActive]}
-                  onPress={() => {
-                    if (isBrutto && betrag) {
-                      const raw = parseFloat(betrag.replace(',', '.'));
-                      const steuer = parseFloat(steuersatz) / 100;
-                      if (!isNaN(raw)) {
-                        const netto = raw * (1 - steuer);
-                        setBetrag((Math.round(netto * 100) / 100).toFixed(2).replace('.', ','));
-                      }
+            <View style={styles.toggleRow}>
+              <TouchableOpacity
+                style={[styles.toggle, !isBrutto && styles.toggleActive]}
+                onPress={() => {
+                  if (isBrutto && betrag) {
+                    const raw = parseFloat(betrag.replace(',', '.'));
+                    const steuer = parseFloat(steuersatz) / 100;
+                    if (!isNaN(raw)) {
+                      const netto = raw * (1 - steuer);
+                      setBetrag((Math.round(netto * 100) / 100).toFixed(2).replace('.', ','));
                     }
-                    setIsBrutto(false);
-                  }}
-                >
-                  <Text style={[styles.toggleText, !isBrutto && styles.toggleTextActive]}>Netto</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.toggle, isBrutto && styles.toggleActive]}
-                  onPress={() => {
-                    if (!isBrutto && betrag) {
-                      const raw = parseFloat(betrag.replace(',', '.'));
-                      const steuer = parseFloat(steuersatz) / 100;
-                      if (!isNaN(raw) && steuer < 1) {
-                        const brutto = raw / (1 - steuer);
-                        setBetrag((Math.round(brutto * 100) / 100).toFixed(2).replace('.', ','));
-                      }
+                  }
+                  setIsBrutto(false);
+                }}
+              >
+                <Text style={[styles.toggleText, !isBrutto && styles.toggleTextActive]}>Netto</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggle, isBrutto && styles.toggleActive]}
+                onPress={() => {
+                  if (!isBrutto && betrag) {
+                    const raw = parseFloat(betrag.replace(',', '.'));
+                    const steuer = parseFloat(steuersatz) / 100;
+                    if (!isNaN(raw) && steuer < 1) {
+                      const brutto = raw / (1 - steuer);
+                      setBetrag((Math.round(brutto * 100) / 100).toFixed(2).replace('.', ','));
                     }
-                    setIsBrutto(true);
-                  }}
-                >
-                  <Text style={[styles.toggleText, isBrutto && styles.toggleTextActive]}>Brutto</Text>
-                </TouchableOpacity>
-              </View>
+                  }
+                  setIsBrutto(true);
+                }}
+              >
+                <Text style={[styles.toggleText, isBrutto && styles.toggleTextActive]}>Brutto</Text>
+              </TouchableOpacity>
+            </View>
 
+            <TextInput
+              style={styles.input}
+              placeholder="Betrag in €"
+              placeholderTextColor="#64748B"
+              keyboardType="decimal-pad"
+              value={betrag}
+              onChangeText={setBetrag}
+              returnKeyType="done"
+              autoFocus
+            />
+
+            {isBrutto && (
               <TextInput
                 style={styles.input}
-                placeholder="Betrag in €"
+                placeholder="Steuersatz in % (z.B. 30)"
                 placeholderTextColor="#64748B"
                 keyboardType="decimal-pad"
-                value={betrag}
-                onChangeText={setBetrag}
+                value={steuersatz}
+                onChangeText={setSteuersatz}
                 returnKeyType="done"
               />
+            )}
 
-              {isBrutto && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Steuersatz in % (z.B. 30)"
-                  placeholderTextColor="#64748B"
-                  keyboardType="decimal-pad"
-                  value={steuersatz}
-                  onChangeText={setSteuersatz}
-                  returnKeyType="done"
-                />
-              )}
+            {isBrutto && betrag !== '' && (
+              <Text style={styles.nettoHint}>
+                ≈ Netto: € {(parseFloat(betrag.replace(',', '.') || '0') * (1 - parseFloat(steuersatz) / 100)).toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+              </Text>
+            )}
 
-              {isBrutto && betrag !== '' && (
-                <Text style={styles.nettoHint}>
-                  ≈ Netto: € {(parseFloat(betrag.replace(',', '.') || '0') * (1 - parseFloat(steuersatz) / 100)).toLocaleString('de-DE', { minimumFractionDigits: 2 })}
-                </Text>
-              )}
-
-              <TouchableOpacity style={styles.saveBtn} onPress={speichern} disabled={saving}>
-                <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : '✓ Speichern'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setModal(false)}>
-                <Text style={styles.cancelText}>Abbrechen</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </TouchableWithoutFeedback>
+            <TouchableOpacity style={styles.saveBtn} onPress={speichern} disabled={saving}>
+              <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : '✓ Speichern'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setModal(false)}>
+              <Text style={styles.cancelText}>Abbrechen</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </KeyboardAvoidingView>
       </Modal>
     </View>
