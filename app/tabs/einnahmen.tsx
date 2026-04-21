@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { useFinanzStore } from '../../stores/finanzStore';
@@ -116,55 +116,69 @@ export default function EinnahmenScreen() {
         )}
       </ScrollView>
 
-      <Modal visible={modal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>{quelleDetail}</Text>
-            <Text style={styles.modalSub}>{quelle}</Text>
+      <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={() => setModal(false)}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalBox}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text style={styles.modalTitle}>{quelleDetail}</Text>
+              <Text style={styles.modalSub}>{quelle}</Text>
 
-            <View style={styles.toggleRow}>
-              <TouchableOpacity style={[styles.toggle, !isBrutto && styles.toggleActive]} onPress={() => setIsBrutto(false)}>
-                <Text style={[styles.toggleText, !isBrutto && styles.toggleTextActive]}>Netto</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.toggle, isBrutto && styles.toggleActive]} onPress={() => setIsBrutto(true)}>
-                <Text style={[styles.toggleText, isBrutto && styles.toggleTextActive]}>Brutto</Text>
-              </TouchableOpacity>
-            </View>
+              <View style={styles.toggleRow}>
+                <TouchableOpacity style={[styles.toggle, !isBrutto && styles.toggleActive]} onPress={() => setIsBrutto(false)}>
+                  <Text style={[styles.toggleText, !isBrutto && styles.toggleTextActive]}>Netto</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={[styles.toggle, isBrutto && styles.toggleActive]} onPress={() => setIsBrutto(true)}>
+                  <Text style={[styles.toggleText, isBrutto && styles.toggleTextActive]}>Brutto</Text>
+                </TouchableOpacity>
+              </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Betrag in €"
-              placeholderTextColor="#64748B"
-              keyboardType="decimal-pad"
-              value={betrag}
-              onChangeText={setBetrag}
-            />
-
-            {isBrutto && (
               <TextInput
                 style={styles.input}
-                placeholder="Steuersatz in % (z.B. 30)"
+                placeholder="Betrag in €"
                 placeholderTextColor="#64748B"
                 keyboardType="decimal-pad"
-                value={steuersatz}
-                onChangeText={setSteuersatz}
+                value={betrag}
+                onChangeText={setBetrag}
+                returnKeyType="done"
               />
-            )}
 
-            {isBrutto && betrag !== '' && (
-              <Text style={styles.nettoHint}>
-                ≈ Netto: € {(parseFloat(betrag.replace(',', '.') || '0') * (1 - parseFloat(steuersatz) / 100)).toLocaleString('de-DE', { minimumFractionDigits: 2 })}
-              </Text>
-            )}
+              {isBrutto && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Steuersatz in % (z.B. 30)"
+                  placeholderTextColor="#64748B"
+                  keyboardType="decimal-pad"
+                  value={steuersatz}
+                  onChangeText={setSteuersatz}
+                  returnKeyType="done"
+                />
+              )}
 
-            <TouchableOpacity style={styles.saveBtn} onPress={speichern} disabled={saving}>
-              <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : 'Speichern'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setModal(false)}>
-              <Text style={styles.cancelText}>Abbrechen</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              {isBrutto && betrag !== '' && (
+                <Text style={styles.nettoHint}>
+                  ≈ Netto: € {(parseFloat(betrag.replace(',', '.') || '0') * (1 - parseFloat(steuersatz) / 100)).toLocaleString('de-DE', { minimumFractionDigits: 2 })}
+                </Text>
+              )}
+
+              <TouchableOpacity style={styles.saveBtn} onPress={speichern} disabled={saving}>
+                <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : '✓ Speichern'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setModal(false)}>
+                <Text style={styles.cancelText}>Abbrechen</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -190,8 +204,10 @@ const styles = StyleSheet.create({
   verlaufQuelle: { color: '#F1F5F9', fontSize: 14, fontWeight: '600' },
   verlaufDatum: { color: '#64748B', fontSize: 12, marginTop: 2 },
   verlaufBetrag: { color: '#10B981', fontSize: 16, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: '#1E293B', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 28, paddingBottom: 48 },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' },
+  modalScroll: { maxHeight: '85%', backgroundColor: '#1E293B', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  modalBox: { padding: 28, paddingBottom: 48 },
   modalTitle: { fontSize: 22, fontWeight: '800', color: '#F1F5F9', marginBottom: 4 },
   modalSub: { fontSize: 14, color: '#64748B', marginBottom: 20 },
   toggleRow: { flexDirection: 'row', backgroundColor: '#0F172A', borderRadius: 10, padding: 4, marginBottom: 16 },

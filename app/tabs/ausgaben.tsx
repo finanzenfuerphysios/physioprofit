@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { useFinanzStore } from '../../stores/finanzStore';
@@ -118,36 +118,50 @@ export default function AusgabenScreen() {
         )}
       </ScrollView>
 
-      <Modal visible={modal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>{unterkategorie}</Text>
-            <Text style={[styles.modalSub, { color: aktKategorie?.farbe }]}>{aktKategorie?.icon} {aktKategorie?.label}</Text>
+      <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
+          <TouchableWithoutFeedback onPress={() => setModal(false)}>
+            <View style={styles.modalBackdrop} />
+          </TouchableWithoutFeedback>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalBox}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Text style={styles.modalTitle}>{unterkategorie}</Text>
+              <Text style={[styles.modalSub, { color: aktKategorie?.farbe }]}>{aktKategorie?.icon} {aktKategorie?.label}</Text>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Betrag in €"
-              placeholderTextColor="#64748B"
-              keyboardType="decimal-pad"
-              value={betrag}
-              onChangeText={setBetrag}
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Notiz (optional)"
-              placeholderTextColor="#64748B"
-              value={beschreibung}
-              onChangeText={setBeschreibung}
-            />
+              <TextInput
+                style={styles.input}
+                placeholder="Betrag in €"
+                placeholderTextColor="#64748B"
+                keyboardType="decimal-pad"
+                value={betrag}
+                onChangeText={setBetrag}
+                returnKeyType="done"
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="Notiz (optional)"
+                placeholderTextColor="#64748B"
+                value={beschreibung}
+                onChangeText={setBeschreibung}
+                returnKeyType="done"
+              />
 
-            <TouchableOpacity style={[styles.saveBtn, { backgroundColor: aktKategorie?.farbe }]} onPress={speichern} disabled={saving}>
-              <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : 'Speichern'}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setModal(false)}>
-              <Text style={styles.cancelText}>Abbrechen</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              <TouchableOpacity style={[styles.saveBtn, { backgroundColor: aktKategorie?.farbe }]} onPress={speichern} disabled={saving}>
+                <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : '✓ Speichern'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setModal(false)}>
+                <Text style={styles.cancelText}>Abbrechen</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -174,8 +188,10 @@ const styles = StyleSheet.create({
   verlaufQuelle: { color: '#F1F5F9', fontSize: 14, fontWeight: '600' },
   verlaufDatum: { color: '#64748B', fontSize: 12, marginTop: 2 },
   verlaufBetrag: { color: '#EF4444', fontSize: 16, fontWeight: '700' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalBox: { backgroundColor: '#1E293B', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 28, paddingBottom: 48 },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' },
+  modalScroll: { maxHeight: '85%', backgroundColor: '#1E293B', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  modalBox: { padding: 28, paddingBottom: 48 },
   modalTitle: { fontSize: 22, fontWeight: '800', color: '#F1F5F9', marginBottom: 4 },
   modalSub: { fontSize: 14, fontWeight: '600', marginBottom: 20 },
   input: { backgroundColor: '#0F172A', borderRadius: 10, padding: 16, color: '#F1F5F9', fontSize: 16, marginBottom: 12 },
