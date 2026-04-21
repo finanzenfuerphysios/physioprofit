@@ -5,6 +5,7 @@ interface Einnahme {
   id: string;
   betrag_netto: number;
   betrag_brutto?: number;
+  steuersatz?: number;
   quelle: string;
   quelle_detail?: string;
   datum: string;
@@ -26,6 +27,10 @@ interface FinanzState {
   fetchMonat: (userId: string, monat: string) => Promise<void>;
   addEinnahme: (userId: string, data: Omit<Einnahme, 'id'>) => Promise<{ error?: string }>;
   addAusgabe: (userId: string, data: Omit<Ausgabe, 'id'>) => Promise<{ error?: string }>;
+  updateAusgabe: (id: string, data: Partial<Omit<Ausgabe, 'id'>>) => Promise<{ error?: string }>;
+  deleteAusgabe: (id: string) => Promise<{ error?: string }>;
+  updateEinnahme: (id: string, data: Partial<Omit<Einnahme, 'id'>>) => Promise<{ error?: string }>;
+  deleteEinnahme: (id: string) => Promise<{ error?: string }>;
   getGewinn: () => number;
   getEinnahmenTotal: () => number;
   getAusgabenTotal: () => number;
@@ -86,6 +91,66 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
       const { data: rows, error } = (await Promise.race([request, timeout])) as any;
       if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
       if (rows?.[0]) set((s) => ({ ausgaben: [...s.ausgaben, rows[0]] }));
+      return {};
+    } catch (e: any) {
+      return { error: e?.message ?? 'Unbekannter Fehler' };
+    }
+  },
+
+  updateAusgabe: async (id, data) => {
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung (15s)')), 15000)
+      );
+      const request = supabase.from('ausgaben').update(data).eq('id', id).select();
+      const { data: rows, error } = (await Promise.race([request, timeout])) as any;
+      if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
+      if (rows?.[0]) set((s) => ({ ausgaben: s.ausgaben.map((a) => (a.id === id ? rows[0] : a)) }));
+      return {};
+    } catch (e: any) {
+      return { error: e?.message ?? 'Unbekannter Fehler' };
+    }
+  },
+
+  deleteAusgabe: async (id) => {
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung (15s)')), 15000)
+      );
+      const request = supabase.from('ausgaben').delete().eq('id', id);
+      const { error } = (await Promise.race([request, timeout])) as any;
+      if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
+      set((s) => ({ ausgaben: s.ausgaben.filter((a) => a.id !== id) }));
+      return {};
+    } catch (e: any) {
+      return { error: e?.message ?? 'Unbekannter Fehler' };
+    }
+  },
+
+  updateEinnahme: async (id, data) => {
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung (15s)')), 15000)
+      );
+      const request = supabase.from('einnahmen').update(data).eq('id', id).select();
+      const { data: rows, error } = (await Promise.race([request, timeout])) as any;
+      if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
+      if (rows?.[0]) set((s) => ({ einnahmen: s.einnahmen.map((e) => (e.id === id ? rows[0] : e)) }));
+      return {};
+    } catch (e: any) {
+      return { error: e?.message ?? 'Unbekannter Fehler' };
+    }
+  },
+
+  deleteEinnahme: async (id) => {
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung (15s)')), 15000)
+      );
+      const request = supabase.from('einnahmen').delete().eq('id', id);
+      const { error } = (await Promise.race([request, timeout])) as any;
+      if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
+      set((s) => ({ einnahmen: s.einnahmen.filter((e) => e.id !== id) }));
       return {};
     } catch (e: any) {
       return { error: e?.message ?? 'Unbekannter Fehler' };

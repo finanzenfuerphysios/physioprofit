@@ -34,21 +34,45 @@ const QUELLEN = [
 
 export default function EinnahmenScreen() {
   const { user } = useAuthStore();
-  const { einnahmen, addEinnahme } = useFinanzStore();
+  const { einnahmen, addEinnahme, updateEinnahme, deleteEinnahme } = useFinanzStore();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [quelle, setQuelle] = useState('');
   const [quelleDetail, setQuelleDetail] = useState('');
   const [betrag, setBetrag] = useState('');
   const [isBrutto, setIsBrutto] = useState(false);
   const [steuersatz, setSteuersatz] = useState('30');
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   function openModal(q: string, d: string) {
+    const vorhanden = einnahmen.find(e => e.quelle === q && e.quelle_detail === d);
     setQuelle(q);
     setQuelleDetail(d);
-    setBetrag('');
-    setIsBrutto(false);
+    if (vorhanden) {
+      setEditId(vorhanden.id);
+      const wert = vorhanden.betrag_brutto ?? vorhanden.betrag_netto;
+      setBetrag(String(wert).replace('.', ','));
+      setIsBrutto(Boolean(vorhanden.betrag_brutto));
+      setSteuersatz(vorhanden.steuersatz ? String(vorhanden.steuersatz) : '30');
+    } else {
+      setEditId(null);
+      setBetrag('');
+      setIsBrutto(false);
+      setSteuersatz('30');
+    }
+    setModal(true);
+  }
+
+  function openEdit(e: typeof einnahmen[number]) {
+    setQuelle(e.quelle);
+    setQuelleDetail(e.quelle_detail ?? '');
+    setEditId(e.id);
+    const wert = e.betrag_brutto ?? e.betrag_netto;
+    setBetrag(String(wert).replace('.', ','));
+    setIsBrutto(Boolean(e.betrag_brutto));
+    setSteuersatz(e.steuersatz ? String(e.steuersatz) : '30');
     setModal(true);
   }
 
@@ -59,20 +83,43 @@ export default function EinnahmenScreen() {
     setSaving(true);
     const steuer = parseFloat(steuersatz) / 100;
     const netto = isBrutto ? raw * (1 - steuer) : raw;
-    const result = await addEinnahme(user!.id, {
+    const payload = {
       betrag_netto: Math.round(netto * 100) / 100,
       betrag_brutto: isBrutto ? raw : undefined,
       steuersatz: isBrutto ? parseFloat(steuersatz) : undefined,
       quelle,
       quelle_detail: quelleDetail,
-      datum: new Date().toISOString().slice(0, 10),
-    });
+    };
+    const result = editId
+      ? await updateEinnahme(editId, payload)
+      : await addEinnahme(user!.id, { ...payload, datum: new Date().toISOString().slice(0, 10) });
     setSaving(false);
     if (result.error) {
       Alert.alert('Fehler beim Speichern', result.error);
     } else {
       setModal(false);
     }
+  }
+
+  async function loeschen() {
+    if (!editId) return;
+    Alert.alert('Eintrag löschen?', `${quelleDetail} entfernen`, [
+      { text: 'Abbrechen', style: 'cancel' },
+      {
+        text: 'Löschen',
+        style: 'destructive',
+        onPress: async () => {
+          setDeleting(true);
+          const result = await deleteEinnahme(editId);
+          setDeleting(false);
+          if (result.error) {
+            Alert.alert('Fehler beim Löschen', result.error);
+          } else {
+            setModal(false);
+          }
+        },
+      },
+    ]);
   }
 
   const total = einnahmen.reduce((s, e) => s + e.betrag_netto, 0);
@@ -95,12 +142,17 @@ export default function EinnahmenScreen() {
               <Text style={styles.kategorieLabel}>{q.label}</Text>
               <Text style={styles.arrow}>{expanded === q.label ? '▲' : '▼'}</Text>
             </TouchableOpacity>
-            {expanded === q.label && q.details.map((d) => (
-              <TouchableOpacity key={d} style={styles.detail} onPress={() => openModal(q.label, d)}>
-                <Text style={styles.detailText}>{d}</Text>
-                <Text style={styles.detailPlus}>+ Eintragen</Text>
-              </TouchableOpacity>
-            ))}
+            {expanded === q.label && q.details.map((d) => {
+              const vorhanden = einnahmen.find(e => e.quelle === q.label && e.quelle_detail === d);
+              return (
+                <TouchableOpacity key={d} style={styles.detail} onPress={() => openModal(q.label, d)}>
+                  <Text style={styles.detailText}>{d}</Text>
+                  <Text style={styles.detailPlus}>
+                    {vorhanden ? `€ ${vorhanden.betrag_netto.toLocaleString('de-DE', { minimumFractionDigits: 2 })} ›` : '+ Eintragen'}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         ))}
 
@@ -108,13 +160,13 @@ export default function EinnahmenScreen() {
           <View style={styles.verlauf}>
             <Text style={styles.verlaufTitle}>Eingetragen diesen Monat</Text>
             {einnahmen.map((e) => (
-              <View key={e.id} style={styles.verlaufItem}>
-                <View>
+              <TouchableOpacity key={e.id} style={styles.verlaufItem} onPress={() => openEdit(e)}>
+                <View style={{ flex: 1 }}>
                   <Text style={styles.verlaufQuelle}>{e.quelle_detail ?? e.quelle}</Text>
-                  <Text style={styles.verlaufDatum}>{e.datum}</Text>
+                  <Text style={styles.verlaufDatum}>{e.datum} · Tippen zum Ändern</Text>
                 </View>
                 <Text style={styles.verlaufBetrag}>+ € {e.betrag_netto.toLocaleString('de-DE', { minimumFractionDigits: 2 })}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         )}
@@ -200,9 +252,14 @@ export default function EinnahmenScreen() {
               </Text>
             )}
 
-            <TouchableOpacity style={styles.saveBtn} onPress={speichern} disabled={saving}>
-              <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : '✓ Speichern'}</Text>
+            <TouchableOpacity style={styles.saveBtn} onPress={speichern} disabled={saving || deleting}>
+              <Text style={styles.saveBtnText}>{saving ? 'Wird gespeichert...' : editId ? '✓ Aktualisieren' : '✓ Speichern'}</Text>
             </TouchableOpacity>
+            {editId && (
+              <TouchableOpacity onPress={loeschen} disabled={saving || deleting}>
+                <Text style={styles.deleteText}>{deleting ? 'Wird gelöscht...' : '🗑 Eintrag löschen'}</Text>
+              </TouchableOpacity>
+            )}
             <TouchableOpacity onPress={() => setModal(false)}>
               <Text style={styles.cancelText}>Abbrechen</Text>
             </TouchableOpacity>
@@ -250,4 +307,5 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: '#10B981', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
   saveBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
   cancelText: { color: '#64748B', textAlign: 'center', marginTop: 16, fontSize: 15 },
+  deleteText: { color: '#EF4444', textAlign: 'center', marginTop: 16, fontSize: 15, fontWeight: '600' },
 });
