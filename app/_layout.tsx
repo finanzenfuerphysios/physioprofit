@@ -54,6 +54,10 @@ export default function RootLayout() {
         <Stack.Screen name="auth/register" />
         <Stack.Screen name="onboarding/usertype" />
         <Stack.Screen name="tabs/dashboard" />
+        <Stack.Screen name="tabs/einnahmen" />
+        <Stack.Screen name="tabs/ausgaben" />
+        <Stack.Screen name="tabs/quiz" />
+        <Stack.Screen name="tabs/praxis" />
       </Stack>
     </>
   );
