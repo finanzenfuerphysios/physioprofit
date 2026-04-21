@@ -42,20 +42,29 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
   ausgaben: [],
   loading: false,
 
-  fetchMonat: async (userId, monat) => {
+  fetchMonat: async (userId, _monat) => {
     set({ loading: true });
     try {
       const timeout = new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('Zeitüberschreitung beim Laden (15s)')), 15000)
       );
       const request = Promise.all([
-        supabase.from('einnahmen').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`).order('datum', { ascending: false }),
-        supabase.from('ausgaben').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`).order('datum', { ascending: false }),
+        supabase.from('einnahmen').select('*').eq('user_id', userId).order('datum', { ascending: false }),
+        supabase.from('ausgaben').select('*').eq('user_id', userId).order('datum', { ascending: false }),
       ]);
       const [einRes, ausRes] = (await Promise.race([request, timeout])) as any;
-      if (einRes.error) console.warn('[finanzStore] einnahmen fetch error:', einRes.error);
-      if (ausRes.error) console.warn('[finanzStore] ausgaben fetch error:', ausRes.error);
-      set({ einnahmen: einRes.data ?? [], ausgaben: ausRes.data ?? [], loading: false });
+      const updates: any = { loading: false };
+      if (einRes.error) {
+        console.warn('[finanzStore] einnahmen fetch error:', einRes.error);
+      } else {
+        updates.einnahmen = einRes.data ?? [];
+      }
+      if (ausRes.error) {
+        console.warn('[finanzStore] ausgaben fetch error:', ausRes.error);
+      } else {
+        updates.ausgaben = ausRes.data ?? [];
+      }
+      set(updates);
     } catch (e: any) {
       console.warn('[finanzStore] fetchMonat failed:', e?.message);
       set({ loading: false });
@@ -76,7 +85,8 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
         .select();
       const { data: rows, error } = (await Promise.race([request, timeout])) as any;
       if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
-      if (rows?.[0]) set((s) => ({ einnahmen: [...s.einnahmen, rows[0]] }));
+      if (!rows?.[0]) return { error: 'Gespeichert, aber Rückgabe leer — prüfe RLS-SELECT-Policy für einnahmen' };
+      set((s) => ({ einnahmen: [rows[0], ...s.einnahmen] }));
       return {};
     } catch (e: any) {
       return { error: e?.message ?? 'Unbekannter Fehler' };
@@ -97,7 +107,8 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
         .select();
       const { data: rows, error } = (await Promise.race([request, timeout])) as any;
       if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
-      if (rows?.[0]) set((s) => ({ ausgaben: [...s.ausgaben, rows[0]] }));
+      if (!rows?.[0]) return { error: 'Gespeichert, aber Rückgabe leer — prüfe RLS-SELECT-Policy für ausgaben' };
+      set((s) => ({ ausgaben: [rows[0], ...s.ausgaben] }));
       return {};
     } catch (e: any) {
       return { error: e?.message ?? 'Unbekannter Fehler' };

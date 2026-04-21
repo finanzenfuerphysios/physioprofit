@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { useFinanzStore } from '../../stores/finanzStore';
 
@@ -14,9 +14,11 @@ export default function DashboardScreen() {
   const name = user?.user_metadata?.full_name?.split(' ')[0] ?? 'Physio';
   const monat = new Date().toISOString().slice(0, 7);
 
-  useEffect(() => {
-    if (user) fetchMonat(user.id, monat);
-  }, [user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) fetchMonat(user.id, monat);
+    }, [user])
+  );
 
   const einnahmen = getEinnahmenTotal();
   const ausgaben = getAusgabenTotal();
