@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
@@ -37,7 +37,12 @@ const KATEGORIEN = [
 
 export default function AusgabenScreen() {
   const { user, userType } = useAuthStore();
-  const { ausgaben, addAusgabe, updateAusgabe, deleteAusgabe } = useFinanzStore();
+  const { ausgaben, addAusgabe, updateAusgabe, deleteAusgabe, fetchMonat } = useFinanzStore();
+
+  useEffect(() => {
+    if (user) fetchMonat(user.id, new Date().toISOString().slice(0, 7));
+  }, [user]);
+
   const [expanded, setExpanded] = useState<string | null>(null);
   const [modal, setModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);

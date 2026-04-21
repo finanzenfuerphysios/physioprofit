@@ -45,12 +45,19 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
   fetchMonat: async (userId, monat) => {
     set({ loading: true });
     try {
-      const [{ data: e }, { data: a }] = await Promise.all([
-        supabase.from('einnahmen').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`),
-        supabase.from('ausgaben').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`),
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung beim Laden (15s)')), 15000)
+      );
+      const request = Promise.all([
+        supabase.from('einnahmen').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`).order('datum', { ascending: false }),
+        supabase.from('ausgaben').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`).order('datum', { ascending: false }),
       ]);
-      set({ einnahmen: e ?? [], ausgaben: a ?? [], loading: false });
-    } catch {
+      const [einRes, ausRes] = (await Promise.race([request, timeout])) as any;
+      if (einRes.error) console.warn('[finanzStore] einnahmen fetch error:', einRes.error);
+      if (ausRes.error) console.warn('[finanzStore] ausgaben fetch error:', ausRes.error);
+      set({ einnahmen: einRes.data ?? [], ausgaben: ausRes.data ?? [], loading: false });
+    } catch (e: any) {
+      console.warn('[finanzStore] fetchMonat failed:', e?.message);
       set({ loading: false });
     }
   },
