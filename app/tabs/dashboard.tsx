@@ -104,6 +104,10 @@ export default function DashboardScreen() {
           <Text style={styles.navIcon}>📊</Text>
           <Text style={styles.navLabel}>Ausgaben</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.navCard} onPress={() => router.push('/tabs/belege')}>
+          <Text style={styles.navIcon}>📷</Text>
+          <Text style={styles.navLabel}>Belege scannen</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.navCard} onPress={() => router.push('/tabs/quiz')}>
           <Text style={styles.navIcon}>🎯</Text>
           <Text style={styles.navLabel}>Quiz</Text>

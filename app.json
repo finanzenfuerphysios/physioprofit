@@ -14,7 +14,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "PhysioProfit braucht die Kamera, um Kassenbons zu scannen und den Betrag automatisch zu erkennen.",
+        "NSPhotoLibraryUsageDescription": "PhysioProfit braucht Zugriff auf deine Fotos, um gespeicherte Kassenbons auszulesen."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +34,14 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "PhysioProfit braucht die Kamera, um Kassenbons zu scannen.",
+          "photosPermission": "PhysioProfit braucht Zugriff auf deine Fotos, um Kassenbons auszulesen."
+        }
+      ]
     ]
   }
 }

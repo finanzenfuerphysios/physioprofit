@@ -63,6 +63,7 @@ export default function RootLayout() {
         <Stack.Screen name="tabs/dashboard" />
         <Stack.Screen name="tabs/einnahmen" />
         <Stack.Screen name="tabs/ausgaben" />
+        <Stack.Screen name="tabs/belege" />
         <Stack.Screen name="tabs/quiz" />
         <Stack.Screen name="tabs/praxis" />
       </Stack>
