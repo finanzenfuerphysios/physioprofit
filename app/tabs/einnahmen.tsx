@@ -121,16 +121,19 @@ export default function EinnahmenScreen() {
       </ScrollView>
 
       <Modal visible={modal} transparent animationType="slide" onRequestClose={() => setModal(false)}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          style={styles.modalOverlay}
-        >
-          <TouchableOpacity activeOpacity={1} style={styles.modalBackdrop} onPress={() => { Keyboard.dismiss(); setModal(false); }} />
-          <ScrollView
-            style={styles.modalScroll}
-            contentContainerStyle={styles.modalBox}
-            keyboardShouldPersistTaps="always"
-          >
+        <View style={styles.modalRoot}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => { Keyboard.dismiss(); setModal(false); }}
+          />
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <ScrollView
+              style={styles.modalScroll}
+              contentContainerStyle={styles.modalBox}
+              keyboardShouldPersistTaps="handled"
+              bounces={false}
+            >
             <Text style={styles.modalTitle}>{quelleDetail}</Text>
             <Text style={styles.modalSub}>{quelle}</Text>
 
@@ -177,7 +180,6 @@ export default function EinnahmenScreen() {
               value={betrag}
               onChangeText={setBetrag}
               returnKeyType="done"
-              autoFocus
             />
 
             {isBrutto && (
@@ -204,8 +206,9 @@ export default function EinnahmenScreen() {
             <TouchableOpacity onPress={() => setModal(false)}>
               <Text style={styles.cancelText}>Abbrechen</Text>
             </TouchableOpacity>
-          </ScrollView>
-        </KeyboardAvoidingView>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </View>
       </Modal>
     </View>
   );
@@ -231,9 +234,9 @@ const styles = StyleSheet.create({
   verlaufQuelle: { color: '#F1F5F9', fontSize: 14, fontWeight: '600' },
   verlaufDatum: { color: '#64748B', fontSize: 12, marginTop: 2 },
   verlaufBetrag: { color: '#10B981', fontSize: 16, fontWeight: '700' },
-  modalOverlay: { flex: 1, justifyContent: 'flex-end' },
-  modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.7)' },
-  modalScroll: { maxHeight: '85%', backgroundColor: '#1E293B', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)' },
+  modalScroll: { maxHeight: 600, backgroundColor: '#1E293B', borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   modalBox: { padding: 28, paddingBottom: 48 },
   modalTitle: { fontSize: 22, fontWeight: '800', color: '#F1F5F9', marginBottom: 4 },
   modalSub: { fontSize: 14, color: '#64748B', marginBottom: 20 },
