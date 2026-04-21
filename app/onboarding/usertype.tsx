@@ -12,19 +12,29 @@ export default function UserTypeScreen() {
   async function confirm() {
     if (!selected || !user) return;
     setSaving(true);
-    const { error } = await supabase.from('profiles').upsert({
-      id: user.id,
-      user_type: selected,
-      full_name: user.user_metadata?.full_name ?? null,
-      updated_at: new Date().toISOString(),
-    });
-    setSaving(false);
-    if (error) {
-      Alert.alert('Fehler', error.message);
-      return;
+    try {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung — prüfe Supabase RLS-Policies für profiles')), 15000)
+      );
+      const request = supabase.from('profiles').upsert({
+        id: user.id,
+        user_type: selected,
+        full_name: user.user_metadata?.full_name ?? null,
+        updated_at: new Date().toISOString(),
+      });
+      const { error } = (await Promise.race([request, timeout])) as any;
+      if (error) {
+        Alert.alert('Fehler', `${error.code ?? ''} ${error.message}`.trim());
+        setSaving(false);
+        return;
+      }
+      setUserType(selected);
+      setSaving(false);
+      router.replace('/tabs/dashboard');
+    } catch (e: any) {
+      Alert.alert('Fehler', e?.message ?? 'Unbekannter Fehler');
+      setSaving(false);
     }
-    setUserType(selected);
-    router.replace('/tabs/dashboard');
   }
 
   return (
