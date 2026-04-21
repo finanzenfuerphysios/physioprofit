@@ -34,12 +34,7 @@ export default function RootLayout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('user_type')
-          .eq('id', session.user.id)
-          .single();
-        if (data?.user_type) useAuthStore.getState().setUserType(data.user_type);
+        useAuthStore.getState().loadUserType(session.user.id);
       }
     });
     return () => subscription.unsubscribe();
