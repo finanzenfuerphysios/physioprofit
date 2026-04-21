@@ -60,7 +60,7 @@ export default function AusgabenScreen() {
     const raw = parseFloat(betrag.replace(',', '.'));
     if (!raw || raw <= 0) { Alert.alert('Fehler', 'Bitte gültigen Betrag eingeben'); return; }
     setSaving(true);
-    await addAusgabe(user!.id, {
+    const result = await addAusgabe(user!.id, {
       betrag: raw,
       kategorie,
       unterkategorie,
@@ -68,7 +68,11 @@ export default function AusgabenScreen() {
       datum: new Date().toISOString().slice(0, 10),
     });
     setSaving(false);
-    setModal(false);
+    if (result.error) {
+      Alert.alert('Fehler beim Speichern', result.error);
+    } else {
+      setModal(false);
+    }
   }
 
   const total = ausgaben.reduce((s, a) => s + a.betrag, 0);

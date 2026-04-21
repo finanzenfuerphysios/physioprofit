@@ -24,8 +24,8 @@ interface FinanzState {
   ausgaben: Ausgabe[];
   loading: boolean;
   fetchMonat: (userId: string, monat: string) => Promise<void>;
-  addEinnahme: (userId: string, data: Omit<Einnahme, 'id'>) => Promise<void>;
-  addAusgabe: (userId: string, data: Omit<Ausgabe, 'id'>) => Promise<void>;
+  addEinnahme: (userId: string, data: Omit<Einnahme, 'id'>) => Promise<{ error?: string }>;
+  addAusgabe: (userId: string, data: Omit<Ausgabe, 'id'>) => Promise<{ error?: string }>;
   getGewinn: () => number;
   getEinnahmenTotal: () => number;
   getAusgabenTotal: () => number;
@@ -39,25 +39,49 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
 
   fetchMonat: async (userId, monat) => {
     set({ loading: true });
-    const [{ data: e }, { data: a }] = await Promise.all([
-      supabase.from('einnahmen').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`),
-      supabase.from('ausgaben').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`),
-    ]);
-    set({ einnahmen: e ?? [], ausgaben: a ?? [], loading: false });
+    try {
+      const [{ data: e }, { data: a }] = await Promise.all([
+        supabase.from('einnahmen').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`),
+        supabase.from('ausgaben').select('*').eq('user_id', userId).gte('datum', `${monat}-01`).lte('datum', `${monat}-31`),
+      ]);
+      set({ einnahmen: e ?? [], ausgaben: a ?? [], loading: false });
+    } catch {
+      set({ loading: false });
+    }
   },
 
   addEinnahme: async (userId, data) => {
-    const { data: row } = await supabase.from('einnahmen').insert({ user_id: userId, ...data }).select().single();
-    if (row) set((s) => ({ einnahmen: [...s.einnahmen, row] }));
+    try {
+      const { data: row, error } = await supabase
+        .from('einnahmen')
+        .insert({ user_id: userId, ...data })
+        .select()
+        .single();
+      if (error) return { error: error.message };
+      if (row) set((s) => ({ einnahmen: [...s.einnahmen, row] }));
+      return {};
+    } catch (e: any) {
+      return { error: e?.message ?? 'Unbekannter Fehler' };
+    }
   },
 
   addAusgabe: async (userId, data) => {
-    const { data: row } = await supabase.from('ausgaben').insert({ user_id: userId, ...data }).select().single();
-    if (row) set((s) => ({ ausgaben: [...s.ausgaben, row] }));
+    try {
+      const { data: row, error } = await supabase
+        .from('ausgaben')
+        .insert({ user_id: userId, ...data })
+        .select()
+        .single();
+      if (error) return { error: error.message };
+      if (row) set((s) => ({ ausgaben: [...s.ausgaben, row] }));
+      return {};
+    } catch (e: any) {
+      return { error: e?.message ?? 'Unbekannter Fehler' };
+    }
   },
 
-  getEinnahmenTotal: () => get().einnahmen.reduce((s, e) => s + e.betrag_netto, 0),
-  getAusgabenTotal: () => get().ausgaben.reduce((s, a) => s + a.betrag, 0),
+  getEinnahmenTotal: () => get().einnahmen.reduce((s, e) => s + Number(e.betrag_netto), 0),
+  getAusgabenTotal: () => get().ausgaben.reduce((s, a) => s + Number(a.betrag), 0),
   getGewinn: () => get().getEinnahmenTotal() - get().getAusgabenTotal(),
-  getAusgabenByKategorie: (k) => get().ausgaben.filter((a) => a.kategorie === k).reduce((s, a) => s + a.betrag, 0),
+  getAusgabenByKategorie: (k) => get().ausgaben.filter((a) => a.kategorie === k).reduce((s, a) => s + Number(a.betrag), 0),
 }));

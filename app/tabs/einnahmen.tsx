@@ -59,7 +59,7 @@ export default function EinnahmenScreen() {
     setSaving(true);
     const steuer = parseFloat(steuersatz) / 100;
     const netto = isBrutto ? raw * (1 - steuer) : raw;
-    await addEinnahme(user!.id, {
+    const result = await addEinnahme(user!.id, {
       betrag_netto: Math.round(netto * 100) / 100,
       betrag_brutto: isBrutto ? raw : undefined,
       steuersatz: isBrutto ? parseFloat(steuersatz) : undefined,
@@ -68,7 +68,11 @@ export default function EinnahmenScreen() {
       datum: new Date().toISOString().slice(0, 10),
     });
     setSaving(false);
-    setModal(false);
+    if (result.error) {
+      Alert.alert('Fehler beim Speichern', result.error);
+    } else {
+      setModal(false);
+    }
   }
 
   const total = einnahmen.reduce((s, e) => s + e.betrag_netto, 0);
