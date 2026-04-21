@@ -1,39 +1,62 @@
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../stores/authStore';
 import { supabase } from '../../lib/supabase';
 
 export default function UserTypeScreen() {
   const { user, setUserType } = useAuthStore();
+  const [selected, setSelected] = useState<'angestellt' | 'selbststaendig' | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  async function select(type: 'angestellt' | 'selbststaendig') {
-    setUserType(type);
-    await supabase.from('profiles').upsert({
-      id: user?.id,
-      user_type: type,
+  async function confirm() {
+    if (!selected || !user) return;
+    setSaving(true);
+    const { error } = await supabase.from('profiles').upsert({
+      id: user.id,
+      user_type: selected,
+      full_name: user.user_metadata?.full_name ?? null,
       updated_at: new Date().toISOString(),
     });
+    setSaving(false);
+    if (error) {
+      Alert.alert('Fehler', error.message);
+      return;
+    }
+    setUserType(selected);
     router.replace('/tabs/dashboard');
   }
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Wie arbeitest du?</Text>
-      <Text style={styles.subtitle}>Das bestimmt deine Konten und Funktionen</Text>
+      <Text style={styles.subtitle}>Das bestimmt deine Konten und Funktionen{'\n'}(kannst du später ändern)</Text>
 
-      <TouchableOpacity style={styles.card} onPress={() => select('angestellt')}>
+      <TouchableOpacity
+        style={[styles.card, selected === 'angestellt' && styles.cardSelected]}
+        onPress={() => setSelected('angestellt')}
+      >
         <Text style={styles.cardIcon}>👔</Text>
         <Text style={styles.cardTitle}>Angestellt</Text>
         <Text style={styles.cardDesc}>Du arbeitest in einer Praxis oder Klinik als Angestellter</Text>
         <Text style={styles.cardFeatures}>Konten: Alltag · Freizeit · Investitionen</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={[styles.card, styles.cardGreen]} onPress={() => select('selbststaendig')}>
+      <TouchableOpacity
+        style={[styles.card, selected === 'selbststaendig' && styles.cardSelected]}
+        onPress={() => setSelected('selbststaendig')}
+      >
         <Text style={styles.cardIcon}>🏥</Text>
         <Text style={styles.cardTitle}>Selbstständig</Text>
         <Text style={styles.cardDesc}>Du führst deine eigene Praxis oder arbeitest auf Rechnung</Text>
         <Text style={styles.cardFeatures}>Konten: Alltag · Freizeit · Investitionen · Steuern</Text>
       </TouchableOpacity>
+
+      {selected && (
+        <TouchableOpacity style={styles.confirmBtn} onPress={confirm} disabled={saving}>
+          <Text style={styles.confirmBtnText}>{saving ? 'Wird gespeichert...' : '✓ Bestätigen'}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -41,18 +64,13 @@ export default function UserTypeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0F172A', padding: 24, justifyContent: 'center' },
   title: { fontSize: 28, fontWeight: '800', color: '#F1F5F9', textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 15, color: '#94A3B8', textAlign: 'center', marginBottom: 40 },
-  card: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: '#334155',
-  },
-  cardGreen: { borderColor: '#10B981' },
-  cardIcon: { fontSize: 40, marginBottom: 12 },
-  cardTitle: { fontSize: 20, fontWeight: '700', color: '#F1F5F9', marginBottom: 8 },
-  cardDesc: { fontSize: 14, color: '#94A3B8', marginBottom: 12 },
-  cardFeatures: { fontSize: 13, color: '#10B981', fontWeight: '600' },
+  subtitle: { fontSize: 14, color: '#94A3B8', textAlign: 'center', marginBottom: 32, lineHeight: 20 },
+  card: { backgroundColor: '#1E293B', borderRadius: 16, padding: 20, marginBottom: 12, borderWidth: 2, borderColor: '#334155' },
+  cardSelected: { borderColor: '#10B981', backgroundColor: '#064E3B' },
+  cardIcon: { fontSize: 32, marginBottom: 8 },
+  cardTitle: { fontSize: 18, fontWeight: '700', color: '#F1F5F9', marginBottom: 6 },
+  cardDesc: { fontSize: 13, color: '#94A3B8', marginBottom: 8 },
+  cardFeatures: { fontSize: 12, color: '#10B981', fontWeight: '600' },
+  confirmBtn: { backgroundColor: '#10B981', borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 16 },
+  confirmBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
