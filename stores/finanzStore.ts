@@ -52,17 +52,19 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
 
   addEinnahme: async (userId, data) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return { error: 'Nicht angemeldet — bitte neu einloggen' };
+
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Zeitüberschreitung — prüfe deine Internetverbindung')), 15000)
+        setTimeout(() => reject(new Error('Zeitüberschreitung (15s) — vermutlich RLS-Policy-Problem in Supabase')), 15000)
       );
       const request = supabase
         .from('einnahmen')
         .insert({ user_id: userId, ...data })
-        .select()
-        .single();
-      const { data: row, error } = (await Promise.race([request, timeout])) as any;
-      if (error) return { error: error.message };
-      if (row) set((s) => ({ einnahmen: [...s.einnahmen, row] }));
+        .select();
+      const { data: rows, error } = (await Promise.race([request, timeout])) as any;
+      if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
+      if (rows?.[0]) set((s) => ({ einnahmen: [...s.einnahmen, rows[0]] }));
       return {};
     } catch (e: any) {
       return { error: e?.message ?? 'Unbekannter Fehler' };
@@ -71,17 +73,19 @@ export const useFinanzStore = create<FinanzState>((set, get) => ({
 
   addAusgabe: async (userId, data) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return { error: 'Nicht angemeldet — bitte neu einloggen' };
+
       const timeout = new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error('Zeitüberschreitung — prüfe deine Internetverbindung')), 15000)
+        setTimeout(() => reject(new Error('Zeitüberschreitung (15s) — vermutlich RLS-Policy-Problem in Supabase')), 15000)
       );
       const request = supabase
         .from('ausgaben')
         .insert({ user_id: userId, ...data })
-        .select()
-        .single();
-      const { data: row, error } = (await Promise.race([request, timeout])) as any;
-      if (error) return { error: error.message };
-      if (row) set((s) => ({ ausgaben: [...s.ausgaben, row] }));
+        .select();
+      const { data: rows, error } = (await Promise.race([request, timeout])) as any;
+      if (error) return { error: `${error.code ?? ''} ${error.message}`.trim() };
+      if (rows?.[0]) set((s) => ({ ausgaben: [...s.ausgaben, rows[0]] }));
       return {};
     } catch (e: any) {
       return { error: e?.message ?? 'Unbekannter Fehler' };
