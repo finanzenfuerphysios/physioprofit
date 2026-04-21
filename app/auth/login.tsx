@@ -10,8 +10,16 @@ export default function LoginScreen() {
 
   async function signIn() {
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) Alert.alert('Fehler', error.message);
+    try {
+      const timeout = new Promise<any>((_, reject) =>
+        setTimeout(() => reject(new Error('Zeitüberschreitung beim Login (10s) — Internet prüfen')), 10000)
+      );
+      const req = supabase.auth.signInWithPassword({ email, password });
+      const { error } = (await Promise.race([req, timeout])) as any;
+      if (error) Alert.alert('Fehler', error.message);
+    } catch (e: any) {
+      Alert.alert('Fehler', e?.message ?? 'Unbekannter Fehler');
+    }
     setLoading(false);
   }
 

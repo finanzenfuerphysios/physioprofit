@@ -30,7 +30,19 @@ export default function RootLayout() {
   const setSession = useAuthStore((s) => s.setSession);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
+    const loadInitial = async () => {
+      try {
+        const timeout = new Promise<any>((resolve) => setTimeout(() => resolve({ data: { session: null } }), 5000));
+        const req = supabase.auth.getSession();
+        const { data: { session } } = (await Promise.race([req, timeout])) as any;
+        setSession(session ?? null);
+        if (session) useAuthStore.getState().loadUserType(session.user.id);
+      } catch {
+        setSession(null);
+      }
+    };
+    loadInitial();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       if (session) {
